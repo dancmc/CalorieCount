@@ -1,0 +1,8 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `add_new_oauth`(IN firstname TEXT, IN lastname TEXT, IN providerid TEXT, IN provideruserid TEXT,IN email TEXT, IN access_token TEXT,IN secret TEXT)
+BEGIN
+	INSERT INTO users(email, first_name, last_name) VALUES (email, firstname, lastname);
+    SELECT LAST_INSERT_ID() as t;
+    INSERT INTO social_logins(user_id,provider_id, provider_user_id, email, access_token, secret)
+    VALUES (LAST_INSERT_ID(), providerid, provideruserid, email, access_token, secret);
+END
+
