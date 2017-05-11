@@ -69,6 +69,7 @@ class ClientTrainer(Base):
     end_time = Column(BIGINT)
 
 # TODO file index needs more metadata
+# TODO revamp image naming completely - think of
 class FileIndex(Base):
     __tablename__ = 'file_index'
 

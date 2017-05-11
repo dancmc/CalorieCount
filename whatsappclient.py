@@ -12,9 +12,9 @@ from yowsup.layers import YowLayerEvent
 from yowsup.layers.network import YowNetworkLayer
 import sys, os, threading, time, requests
 from flask import json
+from config import *
 
-
-credentials = ("6596736904", "e6tJiujJYcwxX5E2xmqQWp1XXNM=")
+credentials = WHATSAPP_CREDENTIALS
 import traceback
 
 
