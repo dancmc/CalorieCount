@@ -1,6 +1,7 @@
 from sqlalchemy.schema import Column, ForeignKey
-from sqlalchemy.dialects.mysql import INTEGER, TEXT, BIGINT, SMALLINT, BOOLEAN, VARCHAR
+from sqlalchemy.dialects.mysql import INTEGER, TEXT, BIGINT, SMALLINT, BOOLEAN, VARCHAR, MEDIUMINT
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 from passlib.hash import argon2
 
@@ -17,14 +18,23 @@ class User(Base):
     first_name = Column(TEXT(255), nullable=False)
     last_name = Column(TEXT(255))
     mobile_num = Column(TEXT(255))
-    profile_pic = Column(TEXT(255))
+    profile_pic_id = Column(INTEGER)
     whatsapp = Column(TEXT(255))
+    whatsapp_verified = Column(BOOLEAN, default=False)
     line = Column(TEXT(255))
+    line_verified = Column(BOOLEAN, default=False)
     wechat = Column(TEXT(255))
+    wechat_verified = Column(BOOLEAN, default=False)
     time_joined = Column(BIGINT)
     active = Column(BOOLEAN)
     default_homepage = Column(INTEGER)
     default_login = Column(TEXT(16))
+
+    social_logins = relationship("SocialLogin")
+    clients = relationship("ClientTrainer", foreign_keys="ClientTrainer.trainer_id", lazy="select")
+    trainers = relationship("ClientTrainer", foreign_keys="ClientTrainer.client_id", lazy="select")
+    profile_pic = relationship("FileIndex", primaryjoin='User.profile_pic_id==FileIndex.file_id',
+                               foreign_keys="FileIndex.file_id",remote_side="User.profile_pic_id", lazy="select")
 
     def hash_password(self, password):
         self.password_hash = argon2.hash(password)
@@ -43,14 +53,14 @@ class SocialLogin(Base):
     # result.user.id
     provider_user_id = Column(TEXT(255), nullable=False)
     # result.user.email
-    email = Column(TEXT(255))
-    email_verified = Column(BOOLEAN, default=False)
+
     # result.user.credentials.token
     access_token = Column(TEXT(255))
     # result.user.credential.token_secret
     secret = Column(TEXT(255))
     # result.user.name, first_name, last_name
     # TODO if no first name and last name, then use name
+
 
 
     # profile_url = "http://facebook.com/profile.php?id=%s" % profile['id']
@@ -74,7 +84,8 @@ class FileIndex(Base):
     __tablename__ = 'file_index'
 
     file_id = Column(INTEGER, autoincrement=True, primary_key=True)
-    file_location = Column(VARCHAR(255))
+    filename = Column(VARCHAR(255))
+    file_type = Column(SMALLINT)
 
 class Image(Base):
     __tablename__ = 'images'
@@ -83,7 +94,6 @@ class Image(Base):
     uploader_id = Column(INTEGER, ForeignKey('users.user_id'))
     image_type = Column(SMALLINT(unsigned=True))
     # may not need
-    file_location = Column(VARCHAR(255))
     image_height = Column(SMALLINT)
     image_width = Column(SMALLINT)
     image_size = Column(INTEGER)
@@ -124,8 +134,19 @@ class MessagingPlatform(Base):
     __tablename__ = 'messaging_platforms'
 
     id = Column(INTEGER, primary_key=True, autoincrement=True)
+    # user_id = Column(INTEGER, ForeignKey('users.user_id'))
     username = Column(TEXT(255))
     platform_id = Column(SMALLINT(unsigned=True))
     timestamp = Column(BIGINT)
     image_id = Column(INTEGER)
     text = Column(TEXT)
+
+class OTP(Base):
+    __tablename__ = 'otp'
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    otp = Column(TEXT(255))
+    user_id = Column(INTEGER, ForeignKey('users.user_id'))
+    purpose = Column(TEXT(255))
+    data = Column(TEXT(255))
+    timestamp = Column(BIGINT)

@@ -1,4 +1,4 @@
-import urllib3
+import urllib3, certifi
 import json
 from .user import User
 from .oauth_classes import OAuth2
@@ -11,7 +11,7 @@ class GoogleAdapter(OAuth2):
         if not token:
             return False
         else :
-            http = urllib3.PoolManager()
+            http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
             fields = {
                 "id_token" : token
             }

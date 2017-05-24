@@ -60,17 +60,17 @@ class Auth:
         user = None
         if not provider_config:
             # TODO change return values
-            return "No such provider defined in config."
+            return {"result":False, "error":"No such provider defined in config.", "error_code":2}
         else:
             provider_adapter = provider_config.get("class")
             if not provider_adapter:
-                return "No provider adapter defined in config."
+                return {"result":False, "error":"No provider adapter defined in config.", "error_code":2}
             else:
                 if issubclass(provider_adapter, OAuth1):
                     user = provider_adapter.auth_with_token(request)
                 elif issubclass(provider_adapter, OAuth2):
                     user = provider_adapter.auth_with_token(request.form.get("token"))
 
-        return user if user else None
+        return user if user else {"result":False, "error":"Failed OAuth.", "error_code":1}
 
 

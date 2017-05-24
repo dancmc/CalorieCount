@@ -1,4 +1,4 @@
-import urllib3
+import urllib3, certifi
 import json
 from .user import User
 from .oauth_classes import OAuth2
@@ -12,7 +12,7 @@ class FacebookAdapter(OAuth2):
         if not token:
             return False
         else:
-            http = urllib3.PoolManager()
+            http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
             fields = {
                 "access_token": token,
                 "fields" :"id,name,email, first_name, last_name, picture"
@@ -35,4 +35,4 @@ class FacebookAdapter(OAuth2):
                 return User(id, token, email=email, email_verified=False, name=name, first_name=first_name,
                             last_name=last_name, profile_pic=profile_pic)
             else:
-                return {"result":False, "error":result.get("error").get("message")}
+                return {"result":False, "error":result.get("error").get("message"), "error_code":1}

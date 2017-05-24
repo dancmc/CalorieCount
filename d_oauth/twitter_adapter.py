@@ -1,4 +1,4 @@
-import urllib3
+import urllib3, certifi
 import json
 from .user import User
 from .oauth_classes import OAuth1
@@ -17,7 +17,7 @@ class TwitterAdapter(OAuth1):
                 return False
             oauth_params = request.headers.get("X-Verify-Credentials-Authorization")
 
-            http = urllib3.PoolManager()
+            http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
             headers = {
                 "Authorization": oauth_params
             }

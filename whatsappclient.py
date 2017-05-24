@@ -5,12 +5,12 @@ from yowsup.layers.protocol_presence.protocolentities import AvailablePresencePr
 from yowsup.layers.protocol_receipts.protocolentities import OutgoingReceiptProtocolEntity
 from yowsup.layers.protocol_acks.protocolentities import OutgoingAckProtocolEntity
 
-
 from yowsup.stacks import YowStackBuilder
 from yowsup.layers.auth import AuthError
 from yowsup.layers import YowLayerEvent
 from yowsup.layers.network import YowNetworkLayer
 import sys, os, threading, time, requests
+from random import randint
 from flask import json
 from config import *
 
@@ -35,18 +35,14 @@ class MyLayer(YowInterfaceLayer):
         elif messageProtocolEntity.getType() == 'media':
             self.onMediaMessage(messageProtocolEntity)
 
-
         # to store in database, send grouped receipts later on when going online
         store = (messageProtocolEntity.getId(), messageProtocolEntity.getFrom(), messageProtocolEntity.getParticipant())
-        time.sleep(5)
+        time.sleep(randint(3,5))
         self.toLower(AvailablePresenceProtocolEntity())
-        receipt = OutgoingReceiptProtocolEntity(store[0], store [1],
-                                                True, store[2])
+        receipt = OutgoingReceiptProtocolEntity(store[0], store[1], True, store[2])
         self.toLower(receipt)
-        time.sleep(5)
+        time.sleep(randint(3,5))
         self.toLower(UnavailablePresenceProtocolEntity())
-
-
 
     @ProtocolEntityCallback("receipt")
     def onReceipt(self, entity):
@@ -54,8 +50,11 @@ class MyLayer(YowInterfaceLayer):
         self.toLower(ack)
 
     def onTextMessage(self, textEntity):
-        print(textEntity.getBody())
-
+        url = 'http://localhost:5000/msgplatform/whatsapp/new'
+        # everything has to be encoded as multipart form
+        r = requests.post(url,
+                          data={"json": json.dumps({"text": textEntity.getBody(), "username": textEntity.getFrom()})})
+        print(r.text)
 
     def onMediaMessage(self, mediaEntity):
         if mediaEntity.getMediaType() == "image":
@@ -63,19 +62,25 @@ class MyLayer(YowInterfaceLayer):
             try:
                 data = mediaEntity.getMediaContent()
                 caption = mediaEntity.getCaption()
-                filename = "%d.jpg" % time.time()
-                outPath = os.path.join("/Users/daniel/Downloads", filename)
-                f = open(outPath, 'wb')
-                f.write(data)
-                f.close()
+
+                # TODO theoretically have to save to disk if POSTing fails so can try again later
+                # but practically Whatsapp is not a viable long term solution anyway....
+
+                # filename = "%d.jpg" % int(time.time()*1000)
+                # outPath = os.path.join("/Users/daniel/Downloads", filename)
+                # f = open(outPath, 'wb')
+                # f.write(data)
+                # f.close()
 
                 url = 'http://localhost:5000/msgplatform/whatsapp/new'
-                files = {'image': ('filename', open(outPath, 'rb'), 'image/jpeg')}
+                files = {'image': ('filename', data, 'image/jpeg')}
+                # everything has to be encoded as multipart form
                 r = requests.post(url, files=files,
                                   data={"json": json.dumps({"text": caption, "username": mediaEntity.getFrom()})})
                 print(r.text)
             except:
                 print(traceback.format_exc())
+
 
 class WhatsappInstance:
     def __init__(self):
@@ -106,6 +111,7 @@ class WhatsappInstance:
         t1.start()
 
     def sendmessage(self, user_id, message):
+
         mylayer = self.stack.getLayer(8)
         mylayer.toLower(AvailablePresenceProtocolEntity())
 

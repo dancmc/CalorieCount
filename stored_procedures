@@ -2,27 +2,54 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `add_new_oauth`(IN firstname TEXT, I
 BEGIN
 	INSERT INTO users(email, first_name, last_name) VALUES (email, firstname, lastname);
     SELECT LAST_INSERT_ID() as t;
-    INSERT INTO social_logins(user_id,provider_id, provider_user_id, email, access_token, secret)
-    VALUES (LAST_INSERT_ID(), providerid, provideruserid, email, access_token, secret);
+    INSERT INTO social_logins(user_id,provider_id, provider_user_id, access_token, secret)
+    VALUES (LAST_INSERT_ID(), providerid, provideruserid , access_token, secret);
 END
 
 
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `add_client_message_calorie`(IN userid INTEGER, IN platform_id INTEGER, IN platform_username TEXT, IN messagetext TEXT, IN image_type SMALLINT, IN file_location TEXT, IN image_height SMALLINT, IN image_width SMALLINT, IN image_size INT, IN time_entered BIGINT)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `add_client_message_calorie`(IN userid INTEGER, IN platform_id INTEGER, IN platform_username TEXT, IN messagetext TEXT, IN image_type SMALLINT, IN filename TEXT, IN file_type SMALLINT, IN image_height SMALLINT, IN image_width SMALLINT, IN image_size INT, IN time_entered BIGINT)
 BEGIN
 	IF image_type IS NOT NULL THEN
-		INSERT INTO file_index(file_location) VALUES (file_location);
+		INSERT INTO file_index(filename, file_type) VALUES (filename, file_type);
         SET @fileindex = LAST_INSERT_ID();
-		INSERT INTO images(image_id,uploader_id, image_type, file_location, image_height, image_width, image_size)
-		VALUES (@fileindex, userid, image_type, file_location, image_height, image_width, image_size);
+
+		INSERT INTO images(image_id,uploader_id, image_type, filename, image_height, image_width, image_size)
+		VALUES (@fileindex, userid, image_type, filename, image_height, image_width, image_size);
+
         INSERT INTO file_permissions(file_id, user_id)
         VALUES (@fileindex, userid);
 	END IF;
 
     INSERT INTO messaging_platforms(username, platform_id, `timestamp`, image_id, `text`)
     VALUES (platform_username, platform_id, time_entered, @fileindex, messagetext);
+
     INSERT INTO calorie_entries(user_id, `timestamp`, image_id, client_comment)
     VALUES (userid, time_entered, @fileindex, messagetext);
     SELECT LAST_INSERT_ID() as t;
 
 END
+
+
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `add_client_entry_calorie`(IN userid INTEGER, IN messagetext TEXT, IN image_type SMALLINT, IN filename TEXT, IN file_type SMALLINT,IN image_height SMALLINT, IN image_width SMALLINT, IN image_size INT, IN time_entered BIGINT)
+BEGIN
+	IF image_type IS NOT NULL THEN
+		INSERT INTO file_index(filename, file_type) VALUES (filename, file_type);
+        SET @fileindex = LAST_INSERT_ID();
+
+		INSERT INTO images(image_id,uploader_id, image_type, filename, image_height, image_width, image_size)
+		VALUES (@fileindex, userid, image_type, filename, image_height, image_width, image_size);
+
+        INSERT INTO file_permissions(file_id, user_id)
+        VALUES (@fileindex, userid);
+	END IF;
+
+    INSERT INTO calorie_entries(user_id, `timestamp`, image_id, client_comment)
+    VALUES (userid, time_entered, @fileindex, messagetext);
+    SELECT LAST_INSERT_ID() as t;
+
+END
+
+
+changed fileindex - file location to filename and added file type
