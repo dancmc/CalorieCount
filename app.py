@@ -288,7 +288,6 @@ def get_calorie_entries(requested_id, requesting_id=None):
         requested_id = requesting_id
     entries_from = request.args.get("from")
     entries_to = request.args.get("to")
-    recent = request.args.get("recent")
     calories_above = request.args.get("cal_above")
     calories_below = request.args.get("cal_below")
     page = request.args.get("page")
@@ -297,18 +296,18 @@ def get_calorie_entries(requested_id, requesting_id=None):
     # strings
     sort_by = request.args.get("sort_by")
 
-    if not validate_positive_ints(requested_id, entries_from, entries_to, recent, calories_above, calories_below, page,
+    if not validate_positive_ints(requested_id, entries_from, entries_to, calories_above, calories_below, page,
                                   accept_none=True):
-        return jsonify({"success": False, "error": "Bad parameter - not a positive integer."}), 400
+        return jsonify({"success": False, "error": "Bad parameter - not a positive integer.", "error_code":1}), 400
     if not validate_boolean(reviewed, accept_none=True):
-        return jsonify({"success": False, "error": "Bad parameter - reviewed is not a boolean."}), 400
-    # TODO if not sort_by.lower() in [None, "time", ]
+        return jsonify({"success": False, "error": "Bad parameter - reviewed is not a boolean.", "error_code":2}), 400
+    # TODO if not sort_by.lower() in [None, "time", ] : need to implement sort
 
     requested_id = int(requested_id)
 
     # validate sharing permissions
     if not requested_id == requesting_id and not db.validate_relationship(requested_id, requesting_id):
-        return jsonify({"success": False, "error": "No permissions to view requested resource."}), 401
+        return jsonify({"success": False, "error": "No permissions to view requested resource.", "error_code":300}), 401
 
     entries = db.get_calorie_entries(requested_id, entries_from, entries_to, reviewed, calories_above, calories_below,
                                      page)
@@ -317,6 +316,7 @@ def get_calorie_entries(requested_id, requesting_id=None):
     for entry in entries:
         file = entry.FileIndex
         image_url = IMAGE_LOCATION_PREFIX + str(file.filename) if file.filename else None
+        # TODO might want to add an id
         result = {"timestamp": entry.timestamp, "image_id": entry.image_id, "client_comment": entry.client_comment,
                   "calories": entry.calories, "carb": entry.carb, "protein": entry.protein, "fat": entry.fat,
                   "trainer_comment": entry.trainer_comment, "reviewed": entry.reviewed, "food_name": entry.food_name,
@@ -326,19 +326,14 @@ def get_calorie_entries(requested_id, requesting_id=None):
     return jsonify({"success": True, "results": results, "page": page, "has_next_page": bool(len(entries) > 25)})
 
 
-@app.route('/clients/<requested_id>/calories/recent', methods=["GET"])
-@requires_token
-def get_calorie_entries_recent(requested_id, requesting_id=None):
-    pass
-
 
 # for now no validation of individual image permissions - trust that image names unguessable and relationship level ->
 # permissions are validated in list requests
-@app.route('/photos/<filename>', methods=["GET"])
+@app.route('/files/images/<filename>', methods=["GET"])
 def get_image_file(filename, requesting_id=None):
     # TODO validate file permissions
     # TODO nginx file-accel goes here
-    return send_from_directory("/Users/daniel/Downloads", filename=filename)
+    return send_from_directory(FOOD_IMAGE_FOLDER, filename=filename)
 
 
 @app.route('/clients/<user_id>/entry/calorie/new', methods=["POST"])
@@ -347,14 +342,15 @@ def new_calorie_entry(user_id, requesting_id=None):
     # TODO @userinput
     if user_id == "self":
         user_id = requesting_id
-    elif validate_postive_int(user_id):
-        user_id = int(user_id)
     else:
-        return jsonify({"success": False, "error": "User ID does not exists, or no permission for this resource."}), 400
+        return jsonify({"success": False, "error": "Users can only post photos to their own feed.", "error_code":1}), 403
 
-    # check that users posting to own feed
-    if user_id != requesting_id:
-        return jsonify({"success": False, "error": "Users can only post photos to their own feed."}), 403
+    # users can currently only post to their own feed
+    # if validate_postive_int(user_id):
+    #     user_id = int(user_id)
+    # else:
+    #     return jsonify({"success": False, "error": "User ID does not exists, or no permission for this resource."}), 400
+
 
     # extract images and json from POST body
     image_list = request.files.getlist("image")
@@ -373,7 +369,6 @@ def new_calorie_entry(user_id, requesting_id=None):
             saved = save_image(FOOD_IMAGE_FOLDER,image, ext)
             filename = saved.get("filename")
 
-            # TODO save image to database
             # save image and text to db and return
             result = db.add_new_entry_calorie(user_id=user_id,
                                               text=text,
@@ -383,7 +378,7 @@ def new_calorie_entry(user_id, requesting_id=None):
 
     # if no text or images
     elif not any((filename, text)):
-        return jsonify({"success": False, "error": "No text or images found."}), 400
+        return jsonify({"success": False, "error": "No text or images found.", "error_code":2}), 400
     else:
         # if only text, save text and return
         result = db.add_new_entry_calorie(user_id=user_id, text=text,
@@ -395,7 +390,8 @@ def new_calorie_entry(user_id, requesting_id=None):
         res = {"image_url": image_url}
         return jsonify({"success": True, "result": res}), 200
     else:
-        return jsonify({"success": False, "error": result.get("error") if result else "Unknown error."}), 500
+        return jsonify({"success": False, "error": result.get("error") if result else "Unknown error.",
+                        "error_code": result.get("error_code") if result else 1}), 500
 
 
 @app.route('/clients/self/trainerlist', methods=["GET"])

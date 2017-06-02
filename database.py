@@ -57,7 +57,6 @@ class SocialLogin(Base):
     # result.user.credentials.token
     access_token = Column(TEXT(255))
     # result.user.credential.token_secret
-    secret = Column(TEXT(255))
     # result.user.name, first_name, last_name
     # TODO if no first name and last name, then use name
 

@@ -246,7 +246,7 @@ class DBHelper:
 
         # return id of new calorie entry
         return {"result": True, "calorie_entry": new_calorie_entry} if new_calorie_entry else {"result": False,
-                                                                                               "error": "Failed DB operation"}
+                                                                                               "error": "Failed DB operation.", "error_code":200}
 
     def user_exists(self, user_id):
         result = self.session.query(User).filter_by(user_id=user_id).count()

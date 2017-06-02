@@ -29,7 +29,7 @@ jQuery(document).ready(function () {
     $('#facebook_button').click(function () {
         var form1 = new FormData();
         // TODO get token from fb
-        form1.append("token", "EAACYVLvmXFkBAH8sXeLPkOhVV6g8AVVCYAbJ10J9ZBNM8XLNfmYVGRXEZCPcmMdZBiYZAjLu4C96dwvYx96rhlXTxmgSJwAVhYZB88lxwr7mqcZCpxelVhX2nogvBoumt94Sm4QdfnIs3FRqF7HM7wJev63uxujSTJHMryEKIFitHXIhxv6OyU")
+        form1.append("token", "EAACYVLvmXFkBAFZCYO7WF2SbBZCtmfd8Vdgpw5Ychx9iqTN4IPOpBjcLFffCZAvfH5hX9YyQTsPpm4NEZAwaDi0v8XZApsJgSICoHT9sfPXKbRUVpr6e533NIGJSSLwW3glurTOHaqe08NIG3CZCNpXTBHFrGnzEJBPLGYMITZC80hu0t0iIIDA")
         $.ajax({
             url: '/users/oauthtoken/facebook',
             data: form1,
@@ -38,15 +38,15 @@ jQuery(document).ready(function () {
             processData: false,
             success: function (response) {
                 if(response.success) {
-                    localStorage.setItem("csrf_token", response.csrf_token);
+                    localStorage.setItem("token", response.token);
                     console.log(response)
                     var form2 = document.createElement("form")
                     document.body.appendChild(form2)
                     form2.method = "POST";
                     form2.action = "/feed";
                     var element1 = document.createElement("input")
-                    element1.name = "Authorization"
-                    element1.value = "Bearer " + response.csrf_token
+                    element1.name = "X-CSRF-TOKEN"
+                    element1.value = "Bearer " + response.token
                     element1.type = "hidden"
                     form2.appendChild(element1)
 

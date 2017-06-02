@@ -18,7 +18,7 @@ $(document).ready(function () {
         return JSON.parse(window.atob(base64));
     }
 
-    token = localStorage.getItem("csrf_token");
+    token = localStorage.getItem("token");
 
     json = parseJwt(token)
     id = json.user_id
@@ -28,7 +28,7 @@ $(document).ready(function () {
         url: "/clients/" + id + "/calories/entries",
         type: 'GET',
         beforeSend: function (xhr) {
-            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            xhr.setRequestHeader('X-CSRF-TOKEN', 'Bearer ' + token);
         },
         async: true,
         cache: false,
